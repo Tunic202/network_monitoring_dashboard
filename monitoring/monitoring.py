@@ -1,10 +1,10 @@
 from django.utils import timezone
 
 from .models import Device, Interface
-from .providers import MockMonitoringProvider
+from .providers import get_monitoring_provider
 
 
-provider = MockMonitoringProvider()
+provider = get_monitoring_provider()
 
 
 def check_device(device):

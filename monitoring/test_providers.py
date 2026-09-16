@@ -1,7 +1,12 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 
 from .models import Device
-from .providers import MockMonitoringProvider
+from .providers import (
+    MockMonitoringProvider,
+    get_monitoring_provider,
+)
 
 
 class MockMonitoringProviderTests(TestCase):
@@ -51,3 +56,63 @@ class MockMonitoringProviderTests(TestCase):
             result[0]["name"],
             "GigabitEthernet0/0",
         )
+
+
+class MonitoringProviderSelectionTests(TestCase):
+    """Test monitoring provider selection."""
+
+    def test_default_provider_is_mock(self):
+        """The default provider should be the mock provider."""
+
+        with patch.dict(
+            "os.environ",
+            {},
+            clear=True,
+        ):
+            provider = get_monitoring_provider()
+
+        self.assertIsInstance(
+            provider,
+            MockMonitoringProvider,
+        )
+
+    def test_mock_provider_is_selected(self):
+        """The mock provider should be selected explicitly."""
+
+        with patch.dict(
+            "os.environ",
+            {"MONITORING_PROVIDER": "mock"},
+            clear=True,
+        ):
+            provider = get_monitoring_provider()
+
+        self.assertIsInstance(
+            provider,
+            MockMonitoringProvider,
+        )
+
+    def test_provider_name_is_case_insensitive(self):
+        """Provider selection should ignore letter case."""
+
+        with patch.dict(
+            "os.environ",
+            {"MONITORING_PROVIDER": "MOCK"},
+            clear=True,
+        ):
+            provider = get_monitoring_provider()
+
+        self.assertIsInstance(
+            provider,
+            MockMonitoringProvider,
+        )
+
+    def test_unsupported_provider_raises_error(self):
+        """An unsupported provider should raise ValueError."""
+
+        with patch.dict(
+            "os.environ",
+            {"MONITORING_PROVIDER": "invalid"},
+            clear=True,
+        ):
+            with self.assertRaises(ValueError):
+                get_monitoring_provider()
