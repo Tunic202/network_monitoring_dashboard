@@ -9,13 +9,16 @@ class DeviceAdmin(admin.ModelAdmin):
         "name",
         "ip_address",
         "device_type",
+        "status",
         "snmp_version",
         "location",
         "enabled",
         "last_seen",
+        "last_checked",
     )
     list_filter = (
         "device_type",
+        "status",
         "snmp_version",
         "enabled",
     )

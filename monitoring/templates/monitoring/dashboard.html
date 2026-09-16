@@ -120,6 +120,7 @@
 <div class="card shadow-sm mb-5">
 
     <div class="card-header d-flex justify-content-between align-items-center">
+
         <h2 class="h5 mb-0">
             Devices
         </h2>
@@ -127,6 +128,7 @@
         <span class="badge text-bg-secondary">
             {{ device_count }} total
         </span>
+
     </div>
 
 
@@ -147,6 +149,7 @@
                         <th>Location</th>
                         <th>Status</th>
                         <th>Last Seen</th>
+                        <th>Last Checked</th>
                     </tr>
 
                 </thead>
@@ -189,16 +192,22 @@
 
                         <td>
 
-                            {% if device.last_seen %}
+                            {% if device.status == "online" %}
 
                                 <span class="badge text-bg-success">
                                     Online
                                 </span>
 
-                            {% else %}
+                            {% elif device.status == "offline" %}
 
                                 <span class="badge text-bg-danger">
                                     Offline
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge text-bg-secondary">
+                                    Unknown
                                 </span>
 
                             {% endif %}
@@ -211,6 +220,23 @@
                             {% if device.last_seen %}
 
                                 {{ device.last_seen|date:"Y-m-d H:i:s" }}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Never
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if device.last_checked %}
+
+                                {{ device.last_checked|date:"Y-m-d H:i:s" }}
 
                             {% else %}
 

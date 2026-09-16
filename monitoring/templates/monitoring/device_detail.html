@@ -94,21 +94,93 @@
                     Status
                 </h6>
 
-                {% if device.last_seen %}
+                {% if device.status == "online" %}
 
                     <span class="badge text-bg-success fs-6">
                         Online
                     </span>
 
-                {% else %}
+                {% elif device.status == "offline" %}
 
                     <span class="badge text-bg-danger fs-6">
                         Offline
                     </span>
 
+                {% else %}
+
+                    <span class="badge text-bg-secondary fs-6">
+                        Unknown
+                    </span>
+
                 {% endif %}
 
             </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="row g-4 mb-4">
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+
+            <div class="card-header">
+                <h2 class="h5 mb-0">
+                    Last Seen
+                </h2>
+            </div>
+
+            <div class="card-body">
+
+                {% if device.last_seen %}
+
+                    <p class="fs-5 mb-0">
+                        {{ device.last_seen|date:"Y-m-d H:i:s" }}
+                    </p>
+
+                {% else %}
+
+                    <p class="text-muted mb-0">
+                        Never
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+
+            <div class="card-header">
+                <h2 class="h5 mb-0">
+                    Last Checked
+                </h2>
+            </div>
+
+            <div class="card-body">
+
+                {% if device.last_checked %}
+
+                    <p class="fs-5 mb-0">
+                        {{ device.last_checked|date:"Y-m-d H:i:s" }}
+                    </p>
+
+                {% else %}
+
+                    <p class="text-muted mb-0">
+                        Never
+                    </p>
+
+                {% endif %}
+
+            </div>
+
         </div>
     </div>
 
@@ -193,7 +265,21 @@
 
 
                         <td>
-                            {{ interface.ip_address|default:"-" }}
+
+                            {% if interface.ip_address %}
+
+                                <code>
+                                    {{ interface.ip_address }}
+                                </code>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    -
+                                </span>
+
+                            {% endif %}
+
                         </td>
 
 

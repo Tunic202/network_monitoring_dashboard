@@ -43,8 +43,6 @@ class MonitoringTests(TestCase):
     def test_monitor_device_updates_last_seen(self):
         """Monitoring an online device should update last_seen."""
 
-        self.assertIsNone(self.device.last_seen)
-
         result = monitor_device(self.device)
 
         self.assertTrue(result)
@@ -52,6 +50,29 @@ class MonitoringTests(TestCase):
         self.device.refresh_from_db()
 
         self.assertIsNotNone(self.device.last_seen)
+
+    def test_monitor_device_sets_online_status(self):
+        """An online device should receive online status."""
+
+        monitor_device(self.device)
+
+        self.device.refresh_from_db()
+
+        self.assertEqual(
+            self.device.status,
+            "online",
+        )
+
+    def test_monitor_device_updates_last_checked(self):
+        """Monitoring should update last_checked."""
+
+        self.assertIsNone(self.device.last_checked)
+
+        monitor_device(self.device)
+
+        self.device.refresh_from_db()
+
+        self.assertIsNotNone(self.device.last_checked)
 
     def test_monitor_device_creates_interfaces(self):
         """Monitoring a device should create its interfaces."""
@@ -82,7 +103,10 @@ class MonitoringTests(TestCase):
 
         interfaces = monitor_interfaces(self.device)
 
-        self.assertEqual(len(interfaces), 3)
+        self.assertEqual(
+            len(interfaces),
+            3,
+        )
 
         self.assertEqual(
             Interface.objects.filter(
@@ -113,7 +137,10 @@ class MonitoringTests(TestCase):
 
         results = monitor_all_devices()
 
-        self.assertEqual(len(results), 2)
+        self.assertEqual(
+            len(results),
+            2,
+        )
 
         for result in results:
             self.assertTrue(result["online"])
@@ -122,8 +149,12 @@ class MonitoringTests(TestCase):
         """An offline provider result should clear last_seen."""
 
         self.device.last_seen = self.device.created_at
+        self.device.status = "online"
         self.device.save(
-            update_fields=["last_seen"]
+            update_fields=[
+                "last_seen",
+                "status",
+            ]
         )
 
         mock_provider = Mock()
@@ -139,7 +170,18 @@ class MonitoringTests(TestCase):
 
         self.device.refresh_from_db()
 
-        self.assertIsNone(self.device.last_seen)
+        self.assertIsNone(
+            self.device.last_seen
+        )
+
+        self.assertEqual(
+            self.device.status,
+            "offline",
+        )
+
+        self.assertIsNotNone(
+            self.device.last_checked
+        )
 
         mock_provider.check_device.assert_called_once_with(
             self.device
@@ -149,6 +191,7 @@ class MonitoringTests(TestCase):
         """Provider interface data should be persisted."""
 
         mock_provider = Mock()
+
         mock_provider.get_interfaces.return_value = [
             {
                 "name": "GigabitEthernet0/5",
@@ -170,7 +213,10 @@ class MonitoringTests(TestCase):
                 self.device
             )
 
-        self.assertEqual(len(interfaces), 2)
+        self.assertEqual(
+            len(interfaces),
+            2,
+        )
 
         interface = Interface.objects.get(
             device=self.device,
@@ -185,6 +231,10 @@ class MonitoringTests(TestCase):
         self.assertEqual(
             interface.status,
             "up",
+        )
+
+        self.assertIsNotNone(
+            interface.last_checked
         )
 
         mock_provider.get_interfaces.assert_called_once_with(
@@ -202,6 +252,7 @@ class DashboardViewTests(TestCase):
             device_type="cisco_ios",
             location="Lab",
             enabled=True,
+            status="online",
             system_description=(
                 "Cisco IOS Software - Simulated Device"
             ),
@@ -228,7 +279,10 @@ class DashboardViewTests(TestCase):
             reverse("monitoring:dashboard")
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
 
     def test_dashboard_displays_device(self):
         """The dashboard should display the device name."""
@@ -246,8 +300,16 @@ class DashboardViewTests(TestCase):
         """The dashboard should display a device last-seen timestamp."""
 
         self.device.last_seen = self.device.created_at
+
+        self.device.last_checked = (
+            self.device.created_at
+        )
+
         self.device.save(
-            update_fields=["last_seen"]
+            update_fields=[
+                "last_seen",
+                "last_checked",
+            ]
         )
 
         response = self.client.get(
@@ -261,6 +323,36 @@ class DashboardViewTests(TestCase):
             ),
         )
 
+    def test_dashboard_displays_last_checked(self):
+        """The dashboard should display a last-checked timestamp."""
+
+        self.device.last_checked = (
+            self.device.created_at
+        )
+
+        response = self.client.get(
+            reverse("monitoring:dashboard")
+        )
+
+        self.assertContains(
+            response,
+            self.device.last_checked.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        )
+
+    def test_dashboard_displays_status(self):
+        """The dashboard should display device status."""
+
+        response = self.client.get(
+            reverse("monitoring:dashboard")
+        )
+
+        self.assertContains(
+            response,
+            "Online",
+        )
+
     def test_device_detail_loads(self):
         """The device detail page should return a successful response."""
 
@@ -271,7 +363,10 @@ class DashboardViewTests(TestCase):
             )
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
 
     def test_device_detail_displays_interfaces(self):
         """The device detail page should display its interfaces."""
@@ -308,6 +403,71 @@ class DashboardViewTests(TestCase):
             "Cisco IOS Software - Simulated Device",
         )
 
+    def test_device_detail_displays_status(self):
+        """The device detail page should display device status."""
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_detail",
+                args=[self.device.id],
+            )
+        )
+
+        self.assertContains(
+            response,
+            "Online",
+        )
+
+    def test_device_detail_displays_last_seen(self):
+        """The device detail page should display last seen."""
+
+        self.device.last_seen = (
+            self.device.created_at
+        )
+
+        self.device.save(
+            update_fields=["last_seen"]
+        )
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_detail",
+                args=[self.device.id],
+            )
+        )
+
+        self.assertContains(
+            response,
+            self.device.last_seen.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        )
+
+    def test_device_detail_displays_last_checked(self):
+        """The device detail page should display last checked."""
+
+        self.device.last_checked = (
+            self.device.created_at
+        )
+
+        self.device.save(
+            update_fields=["last_checked"]
+        )
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_detail",
+                args=[self.device.id],
+            )
+        )
+
+        self.assertContains(
+            response,
+            self.device.last_checked.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        )
+
     def test_device_detail_contains_edit_link(self):
         """The device detail page should contain an edit link."""
 
@@ -336,7 +496,10 @@ class DashboardViewTests(TestCase):
             )
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
 
 
 class DeviceManagementTests(TestCase):
@@ -358,7 +521,11 @@ class DeviceManagementTests(TestCase):
             reverse("monitoring:device_create")
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
         self.assertContains(
             response,
             "Add Device",
@@ -442,7 +609,11 @@ class DeviceManagementTests(TestCase):
             )
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
         self.assertContains(
             response,
             "Edit Device",
@@ -503,4 +674,7 @@ class DeviceManagementTests(TestCase):
             )
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.status_code,
+            404,
+        )

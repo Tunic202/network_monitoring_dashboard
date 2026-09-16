@@ -40,10 +40,14 @@ def monitor_interfaces(device):
 def monitor_device(device):
     """Check a device and update its monitoring information."""
 
+    checked_at = timezone.now()
     is_online = check_device(device)
 
+    device.last_checked = checked_at
+
     if is_online:
-        device.last_seen = timezone.now()
+        device.status = "online"
+        device.last_seen = checked_at
 
         system_description = provider.get_system_description(
             device
@@ -63,12 +67,15 @@ def monitor_device(device):
         monitor_interfaces(device)
 
     else:
+        device.status = "offline"
         device.last_seen = None
         device.system_description = ""
 
     device.save(
         update_fields=[
+            "status",
             "last_seen",
+            "last_checked",
             "system_description",
         ]
     )

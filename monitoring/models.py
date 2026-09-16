@@ -11,6 +11,12 @@ class Device(models.Model):
         ("other", "Other"),
     ]
 
+    STATUS_CHOICES = [
+        ("unknown", "Unknown"),
+        ("online", "Online"),
+        ("offline", "Offline"),
+    ]
+
     name = models.CharField(max_length=100)
 
     ip_address = models.GenericIPAddressField(
@@ -46,7 +52,18 @@ class Device(models.Model):
         default=True,
     )
 
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="unknown",
+    )
+
     last_seen = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    last_checked = models.DateTimeField(
         null=True,
         blank=True,
     )

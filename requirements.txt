@@ -4,6 +4,8 @@ django-bootstrap5==26.3
 djangorestframework==3.18.1
 psycopg==3.3.5
 psycopg-binary==3.3.5
+pyasn1==0.6.4
+pysnmp==7.1.29
 python-dotenv==1.2.3
 sqlparse==0.6.0
 typing_extensions==4.16.0
