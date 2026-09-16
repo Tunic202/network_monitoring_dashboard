@@ -1,0 +1,148 @@
+{% extends "monitoring/base.html" %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>{{ device.name }}</h1>
+        <p class="text-muted mb-0">
+            {{ device.get_device_type_display }}
+        </p>
+    </div>
+
+    <a href="{% url 'monitoring:dashboard' %}" class="btn btn-secondary">
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="row g-4 mb-5">
+
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="text-muted">IP Address</h6>
+                <p class="fs-5 mb-0">{{ device.ip_address }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Device Type</h6>
+                <p class="fs-5 mb-0">
+                    {{ device.get_device_type_display }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Location</h6>
+                <p class="fs-5 mb-0">
+                    {{ device.location|default:"-" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Status</h6>
+
+                {% if device.last_seen %}
+                    <span class="badge text-bg-success fs-6">
+                        Online
+                    </span>
+                {% else %}
+                    <span class="badge text-bg-danger fs-6">
+                        Offline
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h2 class="h5 mb-0">Interfaces</h2>
+    </div>
+
+    <div class="card-body p-0">
+
+        {% if interfaces %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Interface</th>
+                        <th>IP Address</th>
+                        <th>Status</th>
+                        <th>Last Checked</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for interface in interfaces %}
+
+                    <tr>
+                        <td>
+                            <strong>{{ interface.name }}</strong>
+                        </td>
+
+                        <td>
+                            {{ interface.ip_address|default:"-" }}
+                        </td>
+
+                        <td>
+                            {% if interface.status == "up" %}
+                                <span class="badge text-bg-success">
+                                    UP
+                                </span>
+                            {% elif interface.status == "down" %}
+                                <span class="badge text-bg-danger">
+                                    DOWN
+                                </span>
+                            {% else %}
+                                <span class="badge text-bg-secondary">
+                                    UNKNOWN
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ interface.last_checked|date:"Y-m-d H:i:s" }}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="p-4">
+            <p class="mb-0">No interfaces found.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

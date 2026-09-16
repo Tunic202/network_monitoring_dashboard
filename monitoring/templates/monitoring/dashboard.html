@@ -1,0 +1,244 @@
+{% extends "monitoring/base.html" %}
+
+{% block content %}
+
+<h1 class="mb-4">Network Overview</h1>
+
+<div class="row g-4 mb-5">
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Devices</h5>
+                <p class="display-5 fw-bold mb-0">
+                    {{ device_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Online</h5>
+                <p class="display-5 fw-bold text-success mb-0">
+                    {{ online_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Offline</h5>
+                <p class="display-5 fw-bold text-danger mb-0">
+                    {{ offline_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4 mb-5">
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Interfaces</h5>
+                <p class="display-5 fw-bold mb-0">
+                    {{ interface_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Interfaces Up</h5>
+                <p class="display-5 fw-bold text-success mb-0">
+                    {{ interface_up_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Interfaces Down</h5>
+                <p class="display-5 fw-bold text-danger mb-0">
+                    {{ interface_down_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card shadow-sm mb-5">
+
+    <div class="card-header">
+        <h2 class="h5 mb-0">Devices</h2>
+    </div>
+
+    <div class="card-body p-0">
+
+        {% if devices %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>IP Address</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for device in devices %}
+
+                    <tr>
+                        <td>
+                            <strong>
+                                <a href="{% url 'monitoring:device_detail' device.id %}"
+                                   class="text-decoration-none">
+                                    {{ device.name }}
+                                </a>
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ device.ip_address }}
+                        </td>
+
+                        <td>
+                            {{ device.get_device_type_display }}
+                        </td>
+
+                        <td>
+                            {{ device.location|default:"-" }}
+                        </td>
+
+                        <td>
+                            {% if device.last_seen %}
+                                <span class="badge text-bg-success">
+                                    Online
+                                </span>
+                            {% else %}
+                                <span class="badge text-bg-danger">
+                                    Offline
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="p-4">
+            <p class="mb-0">No enabled devices found.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h2 class="h5 mb-0">Interfaces</h2>
+    </div>
+
+    <div class="card-body p-0">
+
+        {% if interfaces %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Device</th>
+                        <th>Interface</th>
+                        <th>IP Address</th>
+                        <th>Status</th>
+                        <th>Last Checked</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for interface in interfaces %}
+
+                    <tr>
+                        <td>
+                            {{ interface.device.name }}
+                        </td>
+
+                        <td>
+                            <strong>{{ interface.name }}</strong>
+                        </td>
+
+                        <td>
+                            {{ interface.ip_address|default:"-" }}
+                        </td>
+
+                        <td>
+                            {% if interface.status == "up" %}
+                                <span class="badge text-bg-success">
+                                    UP
+                                </span>
+                            {% elif interface.status == "down" %}
+                                <span class="badge text-bg-danger">
+                                    DOWN
+                                </span>
+                            {% else %}
+                                <span class="badge text-bg-secondary">
+                                    UNKNOWN
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ interface.last_checked|date:"Y-m-d H:i:s" }}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="p-4">
+            <p class="mb-0">No interfaces found.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}
