@@ -8,12 +8,9 @@ provider = get_monitoring_provider()
 
 
 def check_device(device):
-    """Simulate checking whether a device is reachable."""
+    """Check whether a device is reachable."""
 
-    if not device.enabled:
-        return False
-
-    return True
+    return provider.check_device(device)
 
 
 def monitor_interfaces(device):
@@ -41,17 +38,40 @@ def monitor_interfaces(device):
 
 
 def monitor_device(device):
-    """Check a device and update its monitoring status."""
+    """Check a device and update its monitoring information."""
 
     is_online = check_device(device)
 
     if is_online:
         device.last_seen = timezone.now()
+
+        system_description = provider.get_system_description(
+            device
+        )
+
+        if system_description:
+            if isinstance(system_description, dict):
+                device.system_description = system_description.get(
+                    "sys_descr",
+                    "",
+                )
+            else:
+                device.system_description = str(
+                    system_description
+                )
+
         monitor_interfaces(device)
+
     else:
         device.last_seen = None
+        device.system_description = ""
 
-    device.save(update_fields=["last_seen"])
+    device.save(
+        update_fields=[
+            "last_seen",
+            "system_description",
+        ]
+    )
 
     return is_online
 

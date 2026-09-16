@@ -99,6 +99,7 @@
                         <th>Type</th>
                         <th>Location</th>
                         <th>Status</th>
+                        <th>Last Seen</th>
                     </tr>
                 </thead>
 
@@ -137,6 +138,14 @@
                                 <span class="badge text-bg-danger">
                                     Offline
                                 </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if device.last_seen %}
+                                {{ device.last_seen|date:"Y-m-d H:i:s" }}
+                            {% else %}
+                                <span class="text-muted">Never</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -212,7 +221,7 @@
                                 </span>
                             {% else %}
                                 <span class="badge text-bg-secondary">
-                                    UNKNOWN
+                                    {{ interface.status|upper }}
                                 </span>
                             {% endif %}
                         </td>

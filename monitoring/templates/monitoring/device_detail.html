@@ -10,18 +10,23 @@
         </p>
     </div>
 
-    <a href="{% url 'monitoring:dashboard' %}" class="btn btn-secondary">
+    <a
+        href="{% url 'monitoring:dashboard' %}"
+        class="btn btn-secondary"
+    >
         Back to Dashboard
     </a>
 </div>
 
-<div class="row g-4 mb-5">
+<div class="row g-4 mb-4">
 
     <div class="col-md-3">
         <div class="card shadow-sm h-100">
             <div class="card-body">
                 <h6 class="text-muted">IP Address</h6>
-                <p class="fs-5 mb-0">{{ device.ip_address }}</p>
+                <p class="fs-5 mb-0">
+                    {{ device.ip_address }}
+                </p>
             </div>
         </div>
     </div>
@@ -68,6 +73,28 @@
 
 </div>
 
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <h2 class="h5 mb-0">System Information</h2>
+    </div>
+
+    <div class="card-body">
+
+        {% if device.system_description %}
+            <p class="mb-0">
+                {{ device.system_description }}
+            </p>
+        {% else %}
+            <p class="text-muted mb-0">
+                No system information available.
+            </p>
+        {% endif %}
+
+    </div>
+
+</div>
+
 <div class="card shadow-sm">
 
     <div class="card-header">
@@ -97,7 +124,9 @@
 
                     <tr>
                         <td>
-                            <strong>{{ interface.name }}</strong>
+                            <strong>
+                                {{ interface.name }}
+                            </strong>
                         </td>
 
                         <td>
@@ -115,7 +144,7 @@
                                 </span>
                             {% else %}
                                 <span class="badge text-bg-secondary">
-                                    UNKNOWN
+                                    {{ interface.status|upper }}
                                 </span>
                             {% endif %}
                         </td>
@@ -136,7 +165,9 @@
         {% else %}
 
         <div class="p-4">
-            <p class="mb-0">No interfaces found.</p>
+            <p class="mb-0">
+                No interfaces found.
+            </p>
         </div>
 
         {% endif %}

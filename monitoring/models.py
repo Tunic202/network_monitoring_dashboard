@@ -51,6 +51,10 @@ class Device(models.Model):
         blank=True,
     )
 
+    system_description = models.TextField(
+        blank=True,
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )

@@ -1,14 +1,15 @@
+from unittest.mock import Mock, patch
+
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import Device, Interface
 from .monitoring import (
     check_device,
+    monitor_all_devices,
     monitor_device,
     monitor_interfaces,
-    monitor_all_devices,
 )
-from .snmp_mock import get_mock_interfaces
 
 
 class MonitoringTests(TestCase):
@@ -24,7 +25,7 @@ class MonitoringTests(TestCase):
         )
 
     def test_check_enabled_device(self):
-        """An enabled device should be reported as reachable."""
+        """An enabled mock device should be reported as reachable."""
 
         result = check_device(self.device)
 
@@ -58,8 +59,22 @@ class MonitoringTests(TestCase):
         monitor_device(self.device)
 
         self.assertEqual(
-            Interface.objects.filter(device=self.device).count(),
+            Interface.objects.filter(
+                device=self.device
+            ).count(),
             3,
+        )
+
+    def test_monitor_device_saves_system_description(self):
+        """Monitoring should save system description."""
+
+        monitor_device(self.device)
+
+        self.device.refresh_from_db()
+
+        self.assertEqual(
+            self.device.system_description,
+            "Cisco IOS Software - Simulated Device",
         )
 
     def test_monitor_interfaces(self):
@@ -103,6 +118,79 @@ class MonitoringTests(TestCase):
         for result in results:
             self.assertTrue(result["online"])
 
+    def test_offline_provider_clears_last_seen(self):
+        """An offline provider result should clear last_seen."""
+
+        self.device.last_seen = self.device.created_at
+        self.device.save(
+            update_fields=["last_seen"]
+        )
+
+        mock_provider = Mock()
+        mock_provider.check_device.return_value = False
+
+        with patch(
+            "monitoring.monitoring.provider",
+            mock_provider,
+        ):
+            result = monitor_device(self.device)
+
+        self.assertFalse(result)
+
+        self.device.refresh_from_db()
+
+        self.assertIsNone(self.device.last_seen)
+
+        mock_provider.check_device.assert_called_once_with(
+            self.device
+        )
+
+    def test_provider_interfaces_are_saved(self):
+        """Provider interface data should be persisted."""
+
+        mock_provider = Mock()
+        mock_provider.get_interfaces.return_value = [
+            {
+                "name": "GigabitEthernet0/5",
+                "ip_address": "10.0.0.1",
+                "status": "up",
+            },
+            {
+                "name": "GigabitEthernet0/6",
+                "ip_address": None,
+                "status": "down",
+            },
+        ]
+
+        with patch(
+            "monitoring.monitoring.provider",
+            mock_provider,
+        ):
+            interfaces = monitor_interfaces(
+                self.device
+            )
+
+        self.assertEqual(len(interfaces), 2)
+
+        interface = Interface.objects.get(
+            device=self.device,
+            name="GigabitEthernet0/5",
+        )
+
+        self.assertEqual(
+            interface.ip_address,
+            "10.0.0.1",
+        )
+
+        self.assertEqual(
+            interface.status,
+            "up",
+        )
+
+        mock_provider.get_interfaces.assert_called_once_with(
+            self.device
+        )
+
 
 class DashboardViewTests(TestCase):
     """Test the monitoring dashboard and device detail pages."""
@@ -114,6 +202,9 @@ class DashboardViewTests(TestCase):
             device_type="cisco_ios",
             location="Lab",
             enabled=True,
+            system_description=(
+                "Cisco IOS Software - Simulated Device"
+            ),
         )
 
         Interface.objects.create(
@@ -151,6 +242,25 @@ class DashboardViewTests(TestCase):
             "Test Router",
         )
 
+    def test_dashboard_displays_last_seen(self):
+        """The dashboard should display a device last-seen timestamp."""
+
+        self.device.last_seen = self.device.created_at
+        self.device.save(
+            update_fields=["last_seen"]
+        )
+
+        response = self.client.get(
+            reverse("monitoring:dashboard")
+        )
+
+        self.assertContains(
+            response,
+            self.device.last_seen.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        )
+
     def test_device_detail_loads(self):
         """The device detail page should return a successful response."""
 
@@ -181,6 +291,21 @@ class DashboardViewTests(TestCase):
         self.assertContains(
             response,
             "GigabitEthernet0/1",
+        )
+
+    def test_device_detail_displays_system_description(self):
+        """The device detail page should display system information."""
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_detail",
+                args=[self.device.id],
+            )
+        )
+
+        self.assertContains(
+            response,
+            "Cisco IOS Software - Simulated Device",
         )
 
     def test_invalid_device_returns_404(self):
