@@ -1,10 +1,11 @@
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from django.test import TestCase
 
 from .models import Device
 from .providers import (
     MockMonitoringProvider,
+    SNMPMonitoringProvider,
     get_monitoring_provider,
 )
 
@@ -58,6 +59,44 @@ class MockMonitoringProviderTests(TestCase):
         )
 
 
+class SNMPMonitoringProviderTests(TestCase):
+    """Test the SNMP monitoring provider."""
+
+    def setUp(self):
+        self.device = Device.objects.create(
+            name="SNMP Router",
+            ip_address="192.168.1.200",
+            device_type="cisco_ios",
+            location="Lab",
+            enabled=True,
+        )
+
+        self.provider = SNMPMonitoringProvider()
+
+    async def test_get_system_description(self):
+        """The SNMP provider should return SNMP system information."""
+
+        expected = {
+            "ip_address": "192.168.1.200",
+            "sys_descr": "Cisco IOS Test Device",
+            "sys_uptime": "10 days",
+        }
+
+        with patch(
+            "monitoring.providers.get_system_description",
+            new=AsyncMock(return_value=expected),
+        ) as mock_snmp:
+            result = await self.provider.get_system_description(
+                self.device
+            )
+
+        self.assertEqual(result, expected)
+
+        mock_snmp.assert_awaited_once_with(
+            "192.168.1.200"
+        )
+
+
 class MonitoringProviderSelectionTests(TestCase):
     """Test monitoring provider selection."""
 
@@ -89,6 +128,21 @@ class MonitoringProviderSelectionTests(TestCase):
         self.assertIsInstance(
             provider,
             MockMonitoringProvider,
+        )
+
+    def test_snmp_provider_is_selected(self):
+        """The SNMP provider should be selected explicitly."""
+
+        with patch.dict(
+            "os.environ",
+            {"MONITORING_PROVIDER": "snmp"},
+            clear=True,
+        ):
+            provider = get_monitoring_provider()
+
+        self.assertIsInstance(
+            provider,
+            SNMPMonitoringProvider,
         )
 
     def test_provider_name_is_case_insensitive(self):
