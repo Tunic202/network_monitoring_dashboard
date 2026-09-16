@@ -1,5 +1,6 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
+from .forms import DeviceForm
 from .models import Device, Interface
 from .monitoring import monitor_all_devices
 
@@ -61,4 +62,68 @@ def device_detail(request, device_id):
         request,
         "monitoring/device_detail.html",
         context,
+    )
+
+
+def device_create(request):
+    """Create a new network device."""
+
+    if request.method == "POST":
+        form = DeviceForm(request.POST)
+
+        if form.is_valid():
+            device = form.save()
+            return redirect(
+                "monitoring:device_detail",
+                device_id=device.id,
+            )
+    else:
+        form = DeviceForm()
+
+    return render(
+        request,
+        "monitoring/device_form.html",
+        {
+            "form": form,
+            "title": "Add Device",
+            "submit_text": "Add Device",
+        },
+    )
+
+
+def device_edit(request, device_id):
+    """Edit an existing network device."""
+
+    device = get_object_or_404(
+        Device,
+        id=device_id,
+    )
+
+    if request.method == "POST":
+        form = DeviceForm(
+            request.POST,
+            instance=device,
+        )
+
+        if form.is_valid():
+            form.save()
+
+            return redirect(
+                "monitoring:device_detail",
+                device_id=device.id,
+            )
+    else:
+        form = DeviceForm(
+            instance=device,
+        )
+
+    return render(
+        request,
+        "monitoring/device_form.html",
+        {
+            "form": form,
+            "title": "Edit Device",
+            "submit_text": "Save Changes",
+            "device": device,
+        },
     )

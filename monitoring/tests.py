@@ -308,12 +308,197 @@ class DashboardViewTests(TestCase):
             "Cisco IOS Software - Simulated Device",
         )
 
+    def test_device_detail_contains_edit_link(self):
+        """The device detail page should contain an edit link."""
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_detail",
+                args=[self.device.id],
+            )
+        )
+
+        self.assertContains(
+            response,
+            reverse(
+                "monitoring:device_edit",
+                args=[self.device.id],
+            ),
+        )
+
     def test_invalid_device_returns_404(self):
         """An invalid device ID should return a 404 response."""
 
         response = self.client.get(
             reverse(
                 "monitoring:device_detail",
+                args=[9999],
+            )
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+
+class DeviceManagementTests(TestCase):
+    """Test adding and editing devices through the web interface."""
+
+    def setUp(self):
+        self.device = Device.objects.create(
+            name="Existing Router",
+            ip_address="192.168.1.10",
+            device_type="cisco_ios",
+            location="Old Lab",
+            enabled=True,
+        )
+
+    def test_add_device_page_loads(self):
+        """The add-device page should load successfully."""
+
+        response = self.client.get(
+            reverse("monitoring:device_create")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Add Device",
+        )
+
+    def test_add_device_creates_device(self):
+        """A valid form should create a new device."""
+
+        data = {
+            "name": "New Router",
+            "ip_address": "192.168.1.20",
+            "device_type": "cisco_ios",
+            "snmp_version": "2c",
+            "location": "New Lab",
+            "enabled": True,
+        }
+
+        response = self.client.post(
+            reverse("monitoring:device_create"),
+            data=data,
+        )
+
+        new_device = Device.objects.get(
+            ip_address="192.168.1.20"
+        )
+
+        self.assertRedirects(
+            response,
+            reverse(
+                "monitoring:device_detail",
+                args=[new_device.id],
+            ),
+        )
+
+        self.assertEqual(
+            new_device.name,
+            "New Router",
+        )
+
+    def test_add_device_rejects_duplicate_ip(self):
+        """A duplicate IP address should be rejected."""
+
+        data = {
+            "name": "Duplicate Router",
+            "ip_address": "192.168.1.10",
+            "device_type": "cisco_ios",
+            "snmp_version": "2c",
+            "location": "Lab",
+            "enabled": True,
+        }
+
+        response = self.client.post(
+            reverse("monitoring:device_create"),
+            data=data,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            "Device with this Ip address already exists.",
+        )
+
+        self.assertEqual(
+            Device.objects.filter(
+                name="Duplicate Router"
+            ).count(),
+            0,
+        )
+
+    def test_edit_device_page_loads(self):
+        """The edit-device page should load successfully."""
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_edit",
+                args=[self.device.id],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Edit Device",
+        )
+
+    def test_edit_device_updates_device(self):
+        """A valid form should update an existing device."""
+
+        data = {
+            "name": "Updated Router",
+            "ip_address": "192.168.1.11",
+            "device_type": "cisco_ios",
+            "snmp_version": "2c",
+            "location": "Updated Lab",
+            "enabled": True,
+        }
+
+        response = self.client.post(
+            reverse(
+                "monitoring:device_edit",
+                args=[self.device.id],
+            ),
+            data=data,
+        )
+
+        self.assertRedirects(
+            response,
+            reverse(
+                "monitoring:device_detail",
+                args=[self.device.id],
+            ),
+        )
+
+        self.device.refresh_from_db()
+
+        self.assertEqual(
+            self.device.name,
+            "Updated Router",
+        )
+
+        self.assertEqual(
+            str(self.device.ip_address),
+            "192.168.1.11",
+        )
+
+        self.assertEqual(
+            self.device.location,
+            "Updated Lab",
+        )
+
+    def test_edit_invalid_device_returns_404(self):
+        """Editing an invalid device ID should return 404."""
+
+        response = self.client.get(
+            reverse(
+                "monitoring:device_edit",
                 args=[9999],
             )
         )
