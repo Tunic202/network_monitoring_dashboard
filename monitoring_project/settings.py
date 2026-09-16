@@ -7,6 +7,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
+from platformshconfig import Config
 
 
 load_dotenv()
@@ -39,9 +40,7 @@ if not SECRET_KEY:
             "DJANGO_SECRET_KEY must be set in production."
         )
 
-    SECRET_KEY = (
-        "dev-only-secret-key-change-before-production"
-    )
+    SECRET_KEY = "dev-only-secret-key"
 
 
 DEBUG = not PRODUCTION
@@ -112,15 +111,48 @@ WSGI_APPLICATION = "monitoring_project.wsgi.application"
 # Database
 # -------------------------------------------------------------------
 
+database_config = {
+    "ENGINE": "django.db.backends.postgresql",
+}
+
+
+if os.getenv("PLATFORM_RELATIONSHIPS"):
+
+    config = Config()
+
+    credentials = config.credentials("database")
+
+    database_config.update(
+        {
+            "NAME": credentials["path"],
+            "USER": credentials["username"],
+            "PASSWORD": credentials["password"],
+            "HOST": credentials["host"],
+            "PORT": credentials["port"],
+        }
+    )
+
+else:
+
+    database_config.update(
+        {
+            "NAME": os.getenv("DB_NAME"),
+            "USER": os.getenv("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD"),
+            "HOST": os.getenv(
+                "DB_HOST",
+                "localhost",
+            ),
+            "PORT": os.getenv(
+                "DB_PORT",
+                "5432",
+            ),
+        }
+    )
+
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
-    }
+    "default": database_config,
 }
 
 

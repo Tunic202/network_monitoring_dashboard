@@ -1,0 +1,20 @@
+name: network-monitoring-dashboard
+
+type: python:3.13
+
+relationships:
+  database:
+    service: database
+    endpoint: postgresql
+
+hooks:
+  build: |
+    set -eu
+    pip install -r requirements.txt
+  deploy: |
+    python manage.py migrate
+    python manage.py collectstatic --noinput
+
+web:
+  commands:
+    start: gunicorn monitoring_project.wsgi:application
