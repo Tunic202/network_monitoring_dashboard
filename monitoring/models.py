@@ -12,16 +12,48 @@ class Device(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    ip_address = models.GenericIPAddressField(unique=True)
+
+    ip_address = models.GenericIPAddressField(
+        unique=True,
+    )
+
     device_type = models.CharField(
         max_length=50,
         choices=DEVICE_TYPES,
         default="cisco_ios",
     )
-    location = models.CharField(max_length=100, blank=True)
-    enabled = models.BooleanField(default=True)
-    last_seen = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+
+    snmp_version = models.CharField(
+        max_length=10,
+        choices=[
+            ("2c", "SNMP v2c"),
+            ("3", "SNMP v3"),
+        ],
+        default="2c",
+    )
+
+    snmp_community = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    location = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    enabled = models.BooleanField(
+        default=True,
+    )
+
+    last_seen = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
     def __str__(self):
         return self.name
@@ -35,15 +67,21 @@ class Interface(models.Model):
         on_delete=models.CASCADE,
         related_name="interfaces",
     )
-    name = models.CharField(max_length=100)
+
+    name = models.CharField(
+        max_length=100,
+    )
+
     ip_address = models.GenericIPAddressField(
         null=True,
         blank=True,
     )
+
     status = models.CharField(
         max_length=50,
         default="unknown",
     )
+
     last_checked = models.DateTimeField(
         null=True,
         blank=True,

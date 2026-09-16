@@ -4,11 +4,11 @@ from django.urls import reverse
 from .models import Device, Interface
 from .monitoring import (
     check_device,
-    get_mock_interfaces,
     monitor_device,
     monitor_interfaces,
     monitor_all_devices,
 )
+from .snmp_mock import get_mock_interfaces
 
 
 class MonitoringTests(TestCase):
@@ -38,18 +38,6 @@ class MonitoringTests(TestCase):
         result = check_device(self.device)
 
         self.assertFalse(result)
-
-    def test_get_mock_interfaces(self):
-        """Mock monitoring should return three interfaces."""
-
-        interfaces = get_mock_interfaces(self.device)
-
-        self.assertEqual(len(interfaces), 3)
-
-        self.assertEqual(
-            interfaces[0]["name"],
-            "GigabitEthernet0/0",
-        )
 
     def test_monitor_device_updates_last_seen(self):
         """Monitoring an online device should update last_seen."""

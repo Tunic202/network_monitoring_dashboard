@@ -1,6 +1,10 @@
 from django.utils import timezone
 
 from .models import Device, Interface
+from .providers import MockMonitoringProvider
+
+
+provider = MockMonitoringProvider()
 
 
 def check_device(device):
@@ -12,32 +16,10 @@ def check_device(device):
     return True
 
 
-def get_mock_interfaces(device):
-    """Return simulated interface data for a device."""
-
-    return [
-        {
-            "name": "GigabitEthernet0/0",
-            "ip_address": str(device.ip_address),
-            "status": "up",
-        },
-        {
-            "name": "GigabitEthernet0/1",
-            "ip_address": None,
-            "status": "down",
-        },
-        {
-            "name": "GigabitEthernet0/2",
-            "ip_address": None,
-            "status": "up",
-        },
-    ]
-
-
 def monitor_interfaces(device):
     """Update interface monitoring data for a device."""
 
-    interfaces = get_mock_interfaces(device)
+    interfaces = provider.get_interfaces(device)
     checked_at = timezone.now()
 
     results = []
